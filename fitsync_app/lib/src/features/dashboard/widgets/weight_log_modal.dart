@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// We need a provider to save weight. I'll add `logWeight` to MealsNotifier (renaming to DailyLogNotifier would be better but keeping it simple)
 import '../../nutrition/providers/nutrition_provider.dart';
+import '../../../core/providers/user_data_provider.dart';
 
 class WeightLogModal extends ConsumerStatefulWidget {
   const WeightLogModal({super.key});
@@ -11,10 +11,14 @@ class WeightLogModal extends ConsumerStatefulWidget {
 }
 
 class _WeightLogModalState extends ConsumerState<WeightLogModal> {
-  final _weightController = TextEditingController();
+  final _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    final userData = ref.watch(userDataProvider);
+    final unitSystem = userData.unitSystem;
+    final weightUnit = unitSystem == 'imperial' ? 'lbs' : 'kg';
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -24,32 +28,32 @@ class _WeightLogModalState extends ConsumerState<WeightLogModal> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Log Weight', style: Theme.of(context).textTheme.titleLarge),
+          Text('Log Weight', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 16),
           TextField(
-            controller: _weightController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Weight (kg)',
-              suffixText: 'kg',
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: 'Weight ($weightUnit)',
+              border: const OutlineInputBorder(),
             ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             autofocus: true,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              final weight = double.tryParse(_weightController.text);
-              if (weight != null) {
-                ref.read(dailyLogProvider.notifier).logWeight(weight);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Weight logged saved')),
-                );
+              final input = double.tryParse(_controller.text);
+              if (input != null) {
+                // Convert to kg if imperial
+                final weightKg = unitSystem == 'imperial'
+                    ? input / 2.20462
+                    : input;
+                ref.read(dailyLogProvider.notifier).logWeight(weightKg);
                 Navigator.pop(context);
               }
             },
-            child: const Text('Save Weight'),
+            child: const Text('Save'),
           ),
           const SizedBox(height: 16),
         ],

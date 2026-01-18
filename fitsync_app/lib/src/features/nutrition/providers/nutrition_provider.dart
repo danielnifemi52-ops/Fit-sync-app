@@ -35,6 +35,13 @@ class DailyLogNotifier extends Notifier<Map<String, dynamic>> {
     await _saveLog();
   }
 
+  Future<void> addMeals(List<Meal> meals) async {
+    final currentMeals = List<Meal>.from(state['meals'] as List);
+    currentMeals.addAll(meals);
+    state = {...state, 'meals': currentMeals};
+    await _saveLog();
+  }
+
   Future<void> removeMeal(String id) async {
     final currentMeals = List<Meal>.from(state['meals'] as List);
     currentMeals.removeWhere((m) => m.id == id);
@@ -45,6 +52,9 @@ class DailyLogNotifier extends Notifier<Map<String, dynamic>> {
   Future<void> logWeight(double weight) async {
     state = {...state, 'weight': weight};
     await _saveLog();
+
+    // Save to historical weight logs
+    await _storage.saveWeightLog(weight, DateTime.now());
   }
 
   Future<void> _saveLog() async {
@@ -54,6 +64,15 @@ class DailyLogNotifier extends Notifier<Map<String, dynamic>> {
       'meals': meals.map((m) => m.toJson()).toList(),
       'weight': weight,
     });
+
+    // Save to historical calorie logs
+    int totalCalories = 0;
+    for (var meal in meals) {
+      totalCalories += meal.calories;
+    }
+    if (totalCalories > 0) {
+      await _storage.saveCalorieLog(totalCalories, DateTime.now());
+    }
   }
 }
 
@@ -83,3 +102,9 @@ final totalMacrosProvider = Provider((ref) {
 
   return {'calories': calories, 'protein': protein, 'carbs': carbs, 'fat': fat};
 });
+
+final historicalCalorieLogsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      final storage = ref.read(storageServiceProvider);
+      return storage.loadCalorieLogs();
+    });

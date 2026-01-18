@@ -6,6 +6,10 @@ import '../nutrition/widgets/log_meal_modal.dart';
 import '../nutrition/screens/meal_plan_screen.dart';
 import '../workout/screens/workout_plan_screen.dart';
 import 'widgets/weight_log_modal.dart';
+import 'widgets/enhanced_ai_coach_card.dart';
+import 'widgets/weekly_summary_card.dart';
+import '../../core/providers/user_data_provider.dart';
+import '../../core/widgets/premium_background.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -14,68 +18,86 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final macros = ref.watch(totalMacrosProvider);
     final weight = ref.watch(weightProvider);
-    // ...
-    // In main column, add weight card/row
-    // We'll replace the placeholder or add it below summary
-    // Hardcoded targets for MVP
-    const targetCalories = 2000;
-    const targetProtein = 150;
-    const targetCarbs = 200;
-    const targetFat = 65;
+    final userData = ref.watch(userDataProvider);
+
+    // Use calculated targets from user data
+    final targetCalories = userData.targetCalories;
+    final targetProtein = userData.targetProtein;
+    final targetCarbs = userData.targetCarbs;
+    final targetFat = userData.targetFat;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('FitSync Dashboard'),
+        title: Text(
+          'FitSync',
+          style: Theme.of(
+            context,
+          ).textTheme.displayLarge?.copyWith(fontSize: 24),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
               // TODO: Settings
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildSummaryCard(
-                context,
-                macros,
-                targetCalories,
-                targetProtein,
-                targetCarbs,
-                targetFat,
-              ),
-              const SizedBox(height: 16),
-              _buildWeightCard(context, weight),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: PremiumBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Today\'s Meals',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  _buildSummaryCard(
+                    context,
+                    macros,
+                    targetCalories,
+                    targetProtein,
+                    targetCarbs,
+                    targetFat,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildWeightCard(context, weight),
+                  const SizedBox(height: 16),
+                  const EnhancedAiCoachCard(),
+                  const SizedBox(height: 16),
+                  const WeeklySummaryCard(),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Today\'s Meals',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const MealsList(),
+                  const SizedBox(height: 24),
+                  _buildPremiumFeatureCard(
+                    context,
+                    'AI Meal Plan',
+                    Icons.restaurant_menu,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPremiumFeatureCard(
+                    context,
+                    'AI Workout Plan',
+                    Icons.fitness_center,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              const MealsList(),
-              const SizedBox(height: 24),
-              _buildPremiumFeatureCard(
-                context,
-                'AI Meal Plan',
-                Icons.restaurant_menu,
-              ),
-              const SizedBox(height: 12),
-              _buildPremiumFeatureCard(
-                context,
-                'AI Workout Plan',
-                Icons.fitness_center,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -84,10 +106,16 @@ class DashboardScreen extends ConsumerWidget {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
+            backgroundColor: Colors.transparent,
             builder: (_) => const LogMealModal(),
           );
         },
-        label: const Text('Log Meal'),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF2E1A47),
+        label: const Text(
+          'Log Meal',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         icon: const Icon(Icons.add),
       ),
     );
@@ -101,61 +129,60 @@ class DashboardScreen extends ConsumerWidget {
     int tCarb,
     int tFat,
   ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text(
-              'Daily Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return GlassContainer(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Text(
+            'Daily Summary',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildProgressBar(
-              context,
-              'Calories',
-              current['calories']!,
-              tCal,
-              Colors.blue,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildProgressBar(
-                    context,
-                    'Protein',
-                    current['protein']!,
-                    tProt,
-                    Colors.red,
-                  ),
+          ),
+          const SizedBox(height: 16),
+          _buildProgressBar(
+            context,
+            'Calories',
+            current['calories']!,
+            tCal,
+            Colors.blue,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildProgressBar(
+                  context,
+                  'Protein',
+                  current['protein']!,
+                  tProt,
+                  Colors.red,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildProgressBar(
-                    context,
-                    'Carbs',
-                    current['carbs']!,
-                    tCarb,
-                    Colors.green,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildProgressBar(
+                  context,
+                  'Carbs',
+                  current['carbs']!,
+                  tCarb,
+                  Colors.green,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildProgressBar(
-                    context,
-                    'Fat',
-                    current['fat']!,
-                    tFat,
-                    Colors.orange,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildProgressBar(
+                  context,
+                  'Fat',
+                  current['fat']!,
+                  tFat,
+                  Colors.orange,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -174,10 +201,20 @@ class DashboardScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 13,
+              ),
+            ),
             Text(
               '$current / $target',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withOpacity(0.6),
+              ),
             ),
           ],
         ),
@@ -185,9 +222,9 @@ class DashboardScreen extends ConsumerWidget {
         LinearProgressIndicator(
           value: progress,
           color: color,
-          backgroundColor: color.withOpacity(0.2),
+          backgroundColor: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(4),
-          minHeight: 8,
+          minHeight: 6,
         ),
       ],
     );
@@ -198,25 +235,23 @@ class DashboardScreen extends ConsumerWidget {
     String title,
     IconData icon,
   ) {
-    return Card(
-      color: Colors.purple.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.purple.shade200),
-      ),
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      opacity: 0.1,
       child: ListTile(
-        leading: Icon(icon, color: Colors.purple),
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: Colors.white),
         title: Text(
           title,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.purple,
+            color: Colors.white,
           ),
         ),
-        trailing: const Icon(Icons.lock, color: Colors.purple),
-        subtitle: const Text(
-          'Upgrade for AI-generated plans',
-          style: TextStyle(fontSize: 12),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        subtitle: Text(
+          'View your personalized plan',
+          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
         ),
         onTap: () {
           if (title == 'AI Meal Plan') {
@@ -229,10 +264,6 @@ class DashboardScreen extends ConsumerWidget {
               context,
               MaterialPageRoute(builder: (_) => const WorkoutPlanScreen()),
             );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Premium feature coming soon!')),
-            );
           }
         },
       ),
@@ -240,20 +271,29 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildWeightCard(BuildContext context, double? weight) {
-    return Card(
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        leading: const Icon(Icons.monitor_weight, color: Colors.blue),
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.monitor_weight, color: Colors.white),
         title: Text(
           weight != null ? '$weight kg' : 'Log Weight',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-        subtitle: const Text('Current Weight'),
+        subtitle: Text(
+          'Current Weight',
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+        ),
         trailing: IconButton(
-          icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
           onPressed: () {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
+              backgroundColor: Colors.transparent,
               builder: (_) => const WeightLogModal(),
             );
           },
