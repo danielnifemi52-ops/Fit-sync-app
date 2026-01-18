@@ -1,0 +1,9 @@
+@echo off
+echo Adding all files...
+git add .
+echo Committing changes...
+git commit -m "Auto-save: %date% %time%"
+echo Pushing to GitHub...
+git push
+echo Done.
+pause
