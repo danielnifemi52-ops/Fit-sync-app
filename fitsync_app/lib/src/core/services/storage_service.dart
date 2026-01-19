@@ -5,6 +5,8 @@ class StorageService {
   static const String _userDataKey = 'userData';
   static const String _dailyLogKey = 'dailyLog';
   static const String _mealPlanKey = 'mealPlan';
+  static const String _workoutPlanKey = 'workoutPlan';
+  static const String _workoutLogsKey = 'workoutLogs';
 
   Future<void> saveUserData(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,6 +44,20 @@ class StorageService {
   Future<Map<String, dynamic>?> loadMealPlan() async {
     final prefs = await SharedPreferences.getInstance();
     final String? data = prefs.getString(_mealPlanKey);
+    if (data != null) {
+      return jsonDecode(data);
+    }
+    return null;
+  }
+
+  Future<void> saveWorkoutPlan(Map<String, dynamic> plan) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_workoutPlanKey, jsonEncode(plan));
+  }
+
+  Future<Map<String, dynamic>?> loadWorkoutPlan() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? data = prefs.getString(_workoutPlanKey);
     if (data != null) {
       return jsonDecode(data);
     }
@@ -93,6 +109,24 @@ class StorageService {
   Future<List<Map<String, dynamic>>> loadCalorieLogs() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('calorieLogs');
+    if (data != null) {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  // Historical workout logs
+  Future<void> saveWorkoutLog(Map<String, dynamic> log) async {
+    final prefs = await SharedPreferences.getInstance();
+    final logs = await loadWorkoutLogs();
+    logs.add(log);
+    await prefs.setString(_workoutLogsKey, jsonEncode(logs));
+  }
+
+  Future<List<Map<String, dynamic>>> loadWorkoutLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_workoutLogsKey);
     if (data != null) {
       final List<dynamic> decoded = jsonDecode(data);
       return decoded.cast<Map<String, dynamic>>();

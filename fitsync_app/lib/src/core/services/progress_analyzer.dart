@@ -143,4 +143,33 @@ class ProgressAnalyzer {
     final kgPerWeek = poundsPerWeek * 0.45;
     return kgPerWeek;
   }
+
+  /// Calculate workout adherence over the last 7 days
+  static Map<String, dynamic> analyzeWorkoutAdherence({
+    required List<Map<String, dynamic>> workoutLogs,
+    required int weeklyTarget,
+  }) {
+    if (weeklyTarget == 0) {
+      return {'adherencePercent': 0.0, 'completed': 0, 'target': weeklyTarget};
+    }
+
+    final now = DateTime.now();
+    final last7Days = now.subtract(const Duration(days: 7));
+
+    int completed = 0;
+    for (var log in workoutLogs) {
+      final date = DateTime.parse(log['date']);
+      if (date.isAfter(last7Days)) {
+        completed++;
+      }
+    }
+
+    final adherencePercent = (completed / weeklyTarget) * 100;
+
+    return {
+      'adherencePercent': adherencePercent.clamp(0.0, 100.0),
+      'completed': completed,
+      'target': weeklyTarget,
+    };
+  }
 }

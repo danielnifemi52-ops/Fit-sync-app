@@ -11,6 +11,12 @@ class UserData {
   final bool onboardingComplete;
   final String unitSystem; // 'metric' or 'imperial'
 
+  // Workout preferences
+  final String? experienceLevel; // 'beginner', 'intermediate', 'advanced'
+  final String? equipment; // 'gym', 'home', 'bodyweight', 'dumbbells'
+  final int? weeklyAvailability; // 1-7 days
+  final bool isPremium;
+
   // Calculated fields
   final int? bmr;
   final int? tdee;
@@ -36,6 +42,10 @@ class UserData {
     this.targetProtein = 150,
     this.targetCarbs = 200,
     this.targetFat = 65,
+    this.experienceLevel,
+    this.equipment,
+    this.weeklyAvailability,
+    this.isPremium = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +66,10 @@ class UserData {
       'targetProtein': targetProtein,
       'targetCarbs': targetCarbs,
       'targetFat': targetFat,
+      'experienceLevel': experienceLevel,
+      'equipment': equipment,
+      'weeklyAvailability': weeklyAvailability,
+      'isPremium': isPremium,
     };
   }
 
@@ -77,6 +91,10 @@ class UserData {
       targetProtein: json['targetProtein'] ?? 150,
       targetCarbs: json['targetCarbs'] ?? 200,
       targetFat: json['targetFat'] ?? 65,
+      experienceLevel: json['experienceLevel'] as String?,
+      equipment: json['equipment'] as String?,
+      weeklyAvailability: json['weeklyAvailability'] as int?,
+      isPremium: json['isPremium'] ?? false,
     );
   }
 
@@ -97,6 +115,7 @@ class UserData {
     int? targetProtein,
     int? targetCarbs,
     int? targetFat,
+    bool? isPremium,
   }) {
     return UserData(
       age: age ?? this.age,
@@ -115,6 +134,10 @@ class UserData {
       targetProtein: targetProtein ?? this.targetProtein,
       targetCarbs: targetCarbs ?? this.targetCarbs,
       targetFat: targetFat ?? this.targetFat,
+      experienceLevel: experienceLevel ?? this.experienceLevel,
+      equipment: equipment ?? this.equipment,
+      weeklyAvailability: weeklyAvailability ?? this.weeklyAvailability,
+      isPremium: isPremium ?? this.isPremium,
     );
   }
 }

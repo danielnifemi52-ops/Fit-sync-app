@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isPremium(userId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(userId)).data.isPremium == true;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      // Meal plans subcollection
+      match /mealPlans/{planId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isPremium(userId);
+        allow update, delete: if isOwner(userId) && isPremium(userId);
+      }
+      
+      // Workout plans subcollection
+      match /workoutPlans/{planId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isPremium(userId);
+        allow update, delete: if isOwner(userId) && isPremium(userId);
+      }
+      
+      // Weight logs subcollection
+      match /weightLogs/{logId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Calorie logs subcollection
+      match /calorieLogs/{logId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Workout logs subcollection
+      match /workoutLogs/{logId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

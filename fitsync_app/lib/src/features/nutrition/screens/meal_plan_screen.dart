@@ -258,7 +258,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
                             ...meals.entries.map((entry) {
                               final type = entry.key;
                               final meal = entry.value as Map<String, dynamic>;
-                              return _buildMealCard(type, meal);
+                              return _buildMealCard(day, type, meal);
                             }).toList(),
                           ],
                         );
@@ -319,7 +319,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
     );
   }
 
-  Widget _buildMealCard(String type, Map<String, dynamic> meal) {
+  Widget _buildMealCard(String day, String type, Map<String, dynamic> meal) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: GlassContainer(
@@ -351,6 +351,10 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
                       color: Colors.white70,
                     ),
                     onPressed: () {
+                      // The 'day' and 'type' are available in the scope
+                      ref
+                          .read(mealPlanProvider.notifier)
+                          .swapMeal(day, type, meal);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Swapping meal...')),
                       );

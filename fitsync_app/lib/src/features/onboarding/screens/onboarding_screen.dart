@@ -26,8 +26,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _goal = 'maintain';
   String _activityLevel = 'moderate';
 
+  // Workout preferences
+  String _experienceLevel = 'intermediate';
+  String _equipment = 'gym';
+  int _weeklyAvailability = 3;
+
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < 5) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -96,6 +101,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       targetProtein: macros['protein']!,
       targetCarbs: macros['carbs']!,
       targetFat: macros['fat']!,
+      experienceLevel: _experienceLevel,
+      equipment: _equipment,
+      weeklyAvailability: _weeklyAvailability,
     );
 
     ref.read(userDataProvider.notifier).updateUserData(userData);
@@ -116,7 +124,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   vertical: 16,
                 ),
                 child: Row(
-                  children: List.generate(5, (index) {
+                  children: List.generate(6, (index) {
                     return Expanded(
                       child: Container(
                         height: 6,
@@ -161,6 +169,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         _buildWeightPage(),
                         _buildGoalPage(),
                         _buildActivityPage(),
+                        _buildWorkoutPreferencePage(),
                         _buildSummaryPage(),
                       ],
                     ),
@@ -200,7 +209,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        _currentPage == 4 ? 'Complete' : 'Next',
+                        _currentPage == 5 ? 'Complete' : 'Next',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -713,6 +722,116 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: color,
               fontWeight: FontWeight.bold,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkoutPreferencePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Workout Preference',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tell us how you like to train',
+            style: TextStyle(fontSize: 16, color: Colors.white70),
+          ),
+          const SizedBox(height: 32),
+
+          // Experience Level
+          const Text(
+            'Experience Level',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'beginner', label: Text('Beginner')),
+              ButtonSegment(value: 'intermediate', label: Text('Interm.')),
+              ButtonSegment(value: 'advanced', label: Text('Advanced')),
+            ],
+            selected: {_experienceLevel},
+            onSelectionChanged: (Set<String> newSelection) {
+              setState(() => _experienceLevel = newSelection.first);
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Equipment
+          const Text(
+            'Equipment Access',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            decoration: const InputDecoration(
+              labelText: 'Available Equipment',
+              border: OutlineInputBorder(),
+            ),
+            value: _equipment,
+            items: const [
+              DropdownMenuItem(value: 'gym', child: Text('Full Gym')),
+              DropdownMenuItem(
+                value: 'dumbbells',
+                child: Text('Dumbbells Only'),
+              ),
+              DropdownMenuItem(
+                value: 'bodyweight',
+                child: Text('Bodyweight Only'),
+              ),
+              DropdownMenuItem(value: 'home', child: Text('Home Gym / Basic')),
+            ],
+            onChanged: (value) => setState(() => _equipment = value!),
+          ),
+          const SizedBox(height: 24),
+
+          // Weekly Availability
+          const Text(
+            'Days Per Week',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: _weeklyAvailability.toDouble(),
+                  min: 1,
+                  max: 7,
+                  divisions: 6,
+                  label: '$_weeklyAvailability days',
+                  onChanged: (value) {
+                    setState(() => _weeklyAvailability = value.round());
+                  },
+                ),
+              ),
+              Text(
+                '$_weeklyAvailability days',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
           ),
         ],
       ),

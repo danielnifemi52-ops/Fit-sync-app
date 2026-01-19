@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../providers/enhanced_ai_coach_provider.dart';
 import '../../../core/widgets/premium_background.dart';
+import '../../../core/providers/user_data_provider.dart';
+import '../../../core/services/ai_coach_service.dart';
+import '../../nutrition/providers/nutrition_provider.dart';
+import '../../nutrition/providers/meal_plan_provider.dart';
+import '../../workout/providers/workout_plan_provider.dart';
 
 class EnhancedAiCoachCard extends ConsumerWidget {
   const EnhancedAiCoachCard({super.key});
@@ -134,6 +139,24 @@ class EnhancedAiCoachCard extends ConsumerWidget {
                       ],
                     ],
                   ),
+
+                  // Plateau Action
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showPlateauAnalysis(context, ref),
+                      icon: const Icon(Icons.help_outline, size: 18),
+                      label: const Text('Why isn\'t my weight changing?'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
             },
@@ -263,6 +286,221 @@ class EnhancedAiCoachCard extends ConsumerWidget {
         return 'Gaining';
       default:
         return 'Stable';
+    }
+  }
+
+  Future<void> _showPlateauAnalysis(BuildContext context, WidgetRef ref) async {
+    final userData = ref.read(userDataProvider);
+
+    if (!userData.isPremium) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.star, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('Premium Feature', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: const Text(
+            'Plateau diagnostics and metabolic reasoning are available for Premium members. Upgrade to unlock deep insights.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Maybe Later',
+                style: TextStyle(color: Colors.white38),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                ref
+                    .read(userDataProvider.notifier)
+                    .updateUserData(userData.copyWith(isPremium: true));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Upgraded to Premium! Feature Unlocked.'),
+                    backgroundColor: Colors.greenAccent,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Upgrade Now'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+
+    try {
+      final aiCoach = ref.read(aiCoachServiceProvider);
+      final storage = ref.read(storageServiceProvider);
+
+      final weightLogs = await storage.loadWeightLogs();
+      final calorieLogs = await storage.loadCalorieLogs();
+      final workoutLogs = await storage.loadWorkoutLogs();
+
+      final analysis = await aiCoach.generatePlateauAnalysis(
+        userData: userData,
+        weightLogs: weightLogs,
+        dailyLogs: calorieLogs,
+        workoutLogs: workoutLogs,
+      );
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: const Color(0xFF1E1E1E),
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Row(
+                  children: [
+                    Icon(Icons.psychology, color: Colors.blueAccent, size: 32),
+                    SizedBox(width: 12),
+                    Text(
+                      'AI Diagnostic',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: Colors.white10),
+                const SizedBox(height: 16),
+                MarkdownBody(
+                  data: analysis,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      height: 1.5,
+                    ),
+                    h3: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      height: 2.0,
+                    ),
+                    listBullet: const TextStyle(color: Colors.blueAccent),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Back to Dashboard'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context); // Close Diagnostic
+
+                      // Trigger adaptations
+                      ref
+                          .read(mealPlanProvider.notifier)
+                          .generatePlan(
+                            userData,
+                            adjustmentReason: "AI Plateau Diagnosis: $analysis",
+                          );
+                      ref
+                          .read(workoutPlanProvider.notifier)
+                          .generatePlan(
+                            userData,
+                            adjustmentReason: "AI Plateau Diagnosis: $analysis",
+                          );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Adapting your plans based on analysis...',
+                          ),
+                          backgroundColor: Colors.blueAccent,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Adapt My Plan Based on This'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Analysis failed: $e')));
     }
   }
 }
